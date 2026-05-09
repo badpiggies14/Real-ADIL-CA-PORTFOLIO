@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -6,14 +6,26 @@ import Lenis from 'lenis';
 import {
   ArrowUpRight,
   Mail,
-  Send,
+  Menu,
   Speaker,
   VolumeX,
+  X,
 } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const accent = '#FF6B2B';
+const CONTACT_FRAME_COUNT = 124;
+const CONTACT_FRAME_PATH = 'images/contact';
+const CONTACT_FRAME_EXTENSION = 'png';
+
+const socials = [
+  { label: 'GitHub', href: 'https://github.com/badpiggies14', handle: '@badpiggies14' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/adilweb3', handle: '/in/adilweb3' },
+  { label: 'Twitter / X', href: 'https://x.com/HUNTERMONKX', handle: '@HUNTERMONKX' },
+  { label: 'Instagram', href: 'https://www.instagram.com/adil_caaaa', handle: '@adil_caaaa' },
+  { label: 'WhatsApp', href: 'https://wa.me/919447413750', handle: '+91 9447413750' },
+  { label: 'Email', href: 'mailto:caadil15100@gmail.com', handle: 'caadil15100@gmail.com' },
+];
 
 const projects = [
   {
@@ -147,6 +159,15 @@ function BrandIcon({ label, size = 19 }) {
     );
   }
 
+  if (label === 'WhatsApp') {
+    return (
+      <svg {...props}>
+        <path d="M5.2 19.2l1.1-3.3a7 7 0 1 1 2.7 2.4z" />
+        <path d="M9.4 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.6 1.4c.1.2.1.4-.1.6l-.3.4c-.1.1-.2.3-.1.5a5.3 5.3 0 0 0 2.4 2.1c.2.1.4.1.5-.1l.6-.7c.2-.2.4-.2.6-.1l1.4.7c.3.1.4.3.4.5 0 .6-.4 1.5-1.2 1.8-.7.3-2 .2-3.6-.7-2.5-1.4-4.2-3.8-4.3-5.2 0-.5.2-.9.4-1.1z" />
+      </svg>
+    );
+  }
+
   return <Mail size={size} />;
 }
 
@@ -189,6 +210,23 @@ function buildFrameCandidates(index) {
     assetPath(`images/herosection/${name}`),
     assetPath(`image/herosection/${name}`),
   ]);
+}
+
+function buildContactFrameCandidates(index) {
+  const four = String(index).padStart(4, '0');
+  const three = String(index).padStart(3, '0');
+  const names = [
+    `ezgif-frame-${three}.${CONTACT_FRAME_EXTENSION}`,
+    `frame_${four}.${CONTACT_FRAME_EXTENSION}`,
+    `frame_${three}.${CONTACT_FRAME_EXTENSION}`,
+    `contact-${four}.${CONTACT_FRAME_EXTENSION}`,
+    `contact-${three}.${CONTACT_FRAME_EXTENSION}`,
+    `${four}.${CONTACT_FRAME_EXTENSION}`,
+    `${three}.${CONTACT_FRAME_EXTENSION}`,
+    `${index}.${CONTACT_FRAME_EXTENSION}`,
+  ];
+
+  return names.map((name) => assetPath(`${CONTACT_FRAME_PATH}/${name}`));
 }
 
 function probeImage(src) {
@@ -390,8 +428,8 @@ function HeroTitle({ text }) {
         <motion.span
           aria-hidden="true"
           key={`${letter}-${index}`}
-          initial={{ y: '110%', filter: 'blur(8px)', opacity: 0 }}
-          animate={{ y: 0, filter: 'blur(0px)', opacity: 1 }}
+          initial={{ y: '110%', opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 1.85 + index * 0.07, ease: [0.16, 1, 0.3, 1] }}
         >
           {letter === ' ' ? '\u00A0' : letter}
@@ -418,27 +456,42 @@ function SubtitleWords({ text }) {
   );
 }
 
-function Navbar({ soundOn, toggleSound }) {
+function Navbar({ soundOn, toggleSound, audioStatus }) {
   const [hidden, setHidden] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
   const lastY = useRef(0);
 
   useEffect(() => {
     const onScroll = () => {
       const current = window.scrollY;
-      setHidden(current > lastY.current && current > 120);
+      setHidden(!isMobile && !menuOpen && current > lastY.current && current > 120);
       lastY.current = current;
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [isMobile, menuOpen]);
+
+  useEffect(() => {
+    document.body.classList.toggle('menu-lock', menuOpen);
+    return () => document.body.classList.remove('menu-lock');
+  }, [menuOpen]);
 
   const scrollTo = (id) => {
     document.querySelector(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setMenuOpen(false);
   };
+
+  const navItems = [
+    ['Home', '#home'],
+    ['About', '#about'],
+    ['Projects', '#projects'],
+    ['Contact', '#contact'],
+  ];
 
   return (
     <motion.header
-      className="navbar"
+      className={`navbar ${menuOpen ? 'menu-open' : ''}`}
       initial={{ x: '-50%', y: -80, opacity: 0 }}
       animate={{ x: '-50%', y: hidden ? '-125%' : 0, opacity: hidden ? 0 : 1 }}
       transition={{ duration: 0.45, ease: 'easeOut' }}
@@ -447,12 +500,7 @@ function Navbar({ soundOn, toggleSound }) {
         ADIL CA
       </button>
       <nav>
-        {[
-          ['Home', '#home'],
-          ['About', '#about'],
-          ['Projects', '#projects'],
-          ['Contact', '#contact'],
-        ].map(([label, target]) => (
+        {navItems.map(([label, target]) => (
           <button key={label} data-cursor="magnetic" onClick={() => scrollTo(target)}>
             {label}
           </button>
@@ -460,18 +508,47 @@ function Navbar({ soundOn, toggleSound }) {
       </nav>
       <div className="nav-actions">
         <button
-          className={`sound-button ${soundOn ? 'sound-on' : ''}`}
+          className={`sound-button ${soundOn ? 'sound-on' : ''} ${audioStatus === 'error' ? 'sound-error' : ''}`}
           data-cursor="magnetic"
           onClick={toggleSound}
-          aria-label={soundOn ? 'Turn ambient sound off' : 'Turn ambient sound on'}
-          title={soundOn ? 'Sound on' : 'Sound off'}
+          aria-label={soundOn ? 'Pause voice audio' : 'Play voice audio'}
+          title={audioStatus === 'error' ? 'Audio unavailable' : soundOn ? 'Audio playing' : 'Audio paused'}
         >
-          {soundOn ? <Speaker size={18} /> : <VolumeX size={18} />}
+          <span className="sound-icon">{soundOn ? <Speaker size={18} /> : <VolumeX size={18} />}</span>
+          <span className="equalizer" aria-hidden="true"><i /><i /><i /></span>
         </button>
         <button className="touch-button" data-cursor="magnetic" onClick={() => scrollTo('#contact')}>
           Get In Touch
         </button>
+        <button
+          className="menu-button"
+          data-cursor="magnetic"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+        >
+          {menuOpen ? <X size={19} /> : <Menu size={19} />}
+        </button>
       </div>
+      <motion.div
+        className="mobile-menu"
+        initial={false}
+        animate={menuOpen ? { opacity: 1, y: 0, pointerEvents: 'auto' } : { opacity: 0, y: -12, pointerEvents: 'none' }}
+        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {navItems.map(([label, target], index) => (
+          <motion.button
+            key={label}
+            data-cursor="magnetic"
+            onClick={() => scrollTo(target)}
+            initial={false}
+            animate={menuOpen ? { opacity: 1, x: 0 } : { opacity: 0, x: -10 }}
+            transition={{ delay: menuOpen ? index * 0.04 : 0, duration: 0.24 }}
+          >
+            <span>0{index + 1}</span>{label}
+          </motion.button>
+        ))}
+      </motion.div>
     </motion.header>
   );
 }
@@ -486,13 +563,17 @@ function Hero() {
   const isMobile = useIsMobile();
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] });
   const titleOpacity = useTransform(scrollYProgress, [0, 0.72, 1], [1, 1, 0]);
-  const titleY = useTransform(scrollYProgress, [0, 0.6, 1], [0, -10, -40]);
+  const titleY = useTransform(scrollYProgress, [0, 0.6, 1], [0, isMobile ? -22 : -10, isMobile ? -80 : -40]);
 
   useEffect(() => {
-    if (isMobile) return undefined;
     let killed = false;
     let cleanup = () => {};
     let currentIndex = 0;
+    let lastDrawAt = 0;
+    let canvasWidth = 0;
+    let canvasHeight = 0;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const frameStep = isMobile ? 4 : 1;
 
     discoverHeroPattern().then((pattern) => {
       if (killed || !pattern) return;
@@ -503,13 +584,17 @@ function Hero() {
       if (!canvas || !context) return;
 
       const draw = (image) => {
-        const ratio = window.devicePixelRatio || 1;
+        const ratio = Math.min(window.devicePixelRatio || 1, isMobile ? 1.15 : 2);
         const width = window.innerWidth;
         const height = window.innerHeight;
-        canvas.width = width * ratio;
-        canvas.height = height * ratio;
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
+        if (canvasWidth !== width || canvasHeight !== height) {
+          canvasWidth = width;
+          canvasHeight = height;
+          canvas.width = Math.round(width * ratio);
+          canvas.height = Math.round(height * ratio);
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+        }
         context.setTransform(ratio, 0, 0, ratio, 0, 0);
         const scale = Math.max(width / image.width, height / image.height);
         const x = (width - image.width * scale) / 2;
@@ -527,7 +612,7 @@ function Hero() {
       };
 
       const drawNearestLoaded = (index) => {
-        for (let fallback = index; fallback >= 1; fallback -= 1) {
+        for (let fallback = index; fallback >= 1; fallback -= frameStep) {
           const frame = framesRef.current.get(fallback);
           if (frame) {
             draw(frame);
@@ -539,7 +624,7 @@ function Hero() {
       draw(pattern.firstImage);
 
       const warmFrames = async () => {
-        for (let index = 2; index <= 260 && !killed; index += 1) {
+        for (let index = 1 + frameStep; index <= 260 && !killed; index += frameStep) {
           const loaded = await loadFrame(index);
           if (!loaded) {
             frameCountRef.current = index - 1;
@@ -555,9 +640,15 @@ function Hero() {
         end: 'bottom bottom',
         scrub: true,
         onUpdate: (self) => {
-          const index = Math.max(1, Math.min(frameCountRef.current, Math.round(self.progress * frameCountRef.current)));
+          if (reducedMotion) return;
+          const rawIndex = Math.max(1, Math.min(frameCountRef.current, Math.round(self.progress * frameCountRef.current)));
+          const steppedIndex = isMobile ? Math.max(1, Math.round(rawIndex / frameStep) * frameStep) : rawIndex;
+          const index = Math.min(frameCountRef.current, steppedIndex);
           currentIndex = index;
           desiredFrameRef.current = index;
+          const now = performance.now();
+          if (isMobile && now - lastDrawAt < 34) return;
+          lastDrawAt = now;
           requestAnimationFrame(() => drawNearestLoaded(index));
           loadFrame(index).then((loaded) => {
             if (loaded && desiredFrameRef.current === index && !killed) draw(loaded);
@@ -583,7 +674,7 @@ function Hero() {
   }, [isMobile]);
 
   return (
-    <section ref={sectionRef} id="home" className="hero-shell" style={{ minHeight: hasFrames ? '2400px' : '135vh' }}>
+    <section ref={sectionRef} id="home" className="hero-shell" style={{ minHeight: hasFrames ? (isMobile ? '190vh' : '2400px') : (isMobile ? '150vh' : '135vh') }}>
       <div className="hero-sticky">
         <canvas ref={canvasRef} className={`hero-canvas ${hasFrames ? 'is-visible' : ''}`} />
         <div className={`hero-fallback ${hasFrames ? 'is-hidden' : ''}`}>
@@ -610,8 +701,8 @@ function AboutTag({ tag, index, inView }) {
     <motion.span
       className="about-tag"
       data-cursor="magnetic"
-      initial={{ opacity: 0, y: 22, filter: 'blur(10px)' }}
-      animate={inView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
+      initial={{ opacity: 0, y: 22 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
       whileHover={{ y: -8, scale: 1.035 }}
       whileTap={{ scale: 0.98 }}
       transition={{ delay: 0.42 + index * 0.055, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
@@ -635,8 +726,8 @@ function About() {
       <div className="about-noise" />
       <motion.div
         className="about-copy"
-        initial={{ opacity: 0, y: 58, filter: 'blur(16px)' }}
-        animate={inView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
+        initial={{ opacity: 0, y: 58 }}
+        animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
       >
         <motion.span
@@ -760,8 +851,8 @@ function ProjectCard({ project, index }) {
           '--img-y': '0px',
         })
       }
-      initial={{ opacity: 0, y: 70, filter: 'blur(16px)' }}
-      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      initial={{ opacity: 0, y: 70 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-110px' }}
       transition={{ delay: index * 0.075, duration: 0.82, ease: [0.16, 1, 0.3, 1] }}
     >
@@ -861,42 +952,193 @@ function Projects() {
   );
 }
 
+function ContactFramePlayer() {
+  const shellRef = useRef(null);
+  const canvasRef = useRef(null);
+  const framesRef = useRef(new Map());
+  const patternRef = useRef(0);
+  const lastFrameRef = useRef(1);
+  const rafRef = useRef(0);
+  const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const inView = useInView(shellRef, { margin: '220px' });
+  const isMobile = useIsMobile();
+  const { scrollYProgress } = useScroll({ target: shellRef, offset: ['start end', 'end start'] });
+
+  useEffect(() => {
+    if (!inView || failed) return undefined;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let killed = false;
+    let resizeObserver;
+    let lastDrawAt = 0;
+    const frameStep = isMobile ? 4 : 1;
+
+    const draw = (image) => {
+      const canvas = canvasRef.current;
+      const context = canvas?.getContext('2d', { alpha: true });
+      if (!canvas || !context || !image) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const ratio = Math.min(window.devicePixelRatio || 1, isMobile ? 1.15 : 2);
+      const width = Math.max(1, Math.round(rect.width));
+      const height = Math.max(1, Math.round(rect.height));
+
+      if (canvas.width !== Math.round(width * ratio) || canvas.height !== Math.round(height * ratio)) {
+        canvas.width = Math.round(width * ratio);
+        canvas.height = Math.round(height * ratio);
+      }
+
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      context.clearRect(0, 0, width, height);
+      const scale = Math.max(width / image.width, height / image.height);
+      const x = (width - image.width * scale) / 2;
+      const y = (height - image.height * scale) / 2;
+      context.drawImage(image, x, y, image.width * scale, image.height * scale);
+    };
+
+    const loadFrame = async (index) => {
+      if (framesRef.current.has(index)) return framesRef.current.get(index);
+      const src = buildContactFrameCandidates(index)[patternRef.current];
+      const loaded = await probeImage(src);
+      if (loaded) framesRef.current.set(index, loaded);
+      return loaded;
+    };
+
+    const drawNearest = (index) => {
+      for (let frame = index; frame >= 1; frame -= frameStep) {
+        const image = framesRef.current.get(frame);
+        if (image) {
+          draw(image);
+          return;
+        }
+      }
+    };
+
+    const warmNearby = (index) => {
+      const stride = isMobile ? frameStep : 1;
+      for (let offset = stride; offset <= (isMobile ? 8 : 10); offset += stride) {
+        const next = Math.min(CONTACT_FRAME_COUNT, index + offset);
+        if (!framesRef.current.has(next)) loadFrame(next);
+      }
+    };
+
+    const boot = async () => {
+      const candidates = buildContactFrameCandidates(1);
+      let first = null;
+      for (let i = 0; i < candidates.length; i += 1) {
+        first = await probeImage(candidates[i]);
+        if (first) {
+          patternRef.current = i;
+          break;
+        }
+      }
+
+      if (killed) return;
+      if (!first) {
+        setFailed(true);
+        return;
+      }
+
+      framesRef.current.set(1, first);
+      setReady(true);
+      draw(first);
+      warmNearby(1);
+
+      resizeObserver = new ResizeObserver(() => drawNearest(lastFrameRef.current));
+      if (canvasRef.current) resizeObserver.observe(canvasRef.current);
+    };
+
+    boot();
+
+    const unsubscribe = scrollYProgress.on('change', (progress) => {
+      if (!ready && !framesRef.current.has(1)) return;
+      const frameCount = reducedMotion ? 1 : CONTACT_FRAME_COUNT;
+      const target = Math.max(1, Math.min(frameCount, Math.round(progress * frameCount)));
+      const steppedFrame = isMobile ? Math.max(1, Math.round(target / frameStep) * frameStep) : target;
+      const frame = Math.min(frameCount, steppedFrame);
+      if (frame === lastFrameRef.current) return;
+      const now = performance.now();
+      if (isMobile && now - lastDrawAt < 34) return;
+      lastDrawAt = now;
+      lastFrameRef.current = frame;
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => {
+        drawNearest(frame);
+        loadFrame(frame).then((image) => {
+          if (!killed && image && lastFrameRef.current === frame) draw(image);
+        });
+        warmNearby(frame);
+      });
+    });
+
+    return () => {
+      killed = true;
+      unsubscribe();
+      cancelAnimationFrame(rafRef.current);
+      resizeObserver?.disconnect();
+    };
+  }, [failed, inView, isMobile, scrollYProgress]);
+
+  return (
+    <div ref={shellRef} className="contact-frame-shell">
+      <canvas ref={canvasRef} className={`contact-canvas ${ready ? 'is-ready' : ''}`} aria-label="Cinematic contact animation" />
+      <div className={`contact-frame-fallback ${failed ? 'is-visible' : ''}`}>
+        <span>ADIL</span>
+      </div>
+      <div className="contact-frame-hud">
+        <span>OUTRO SEQUENCE</span>
+        <small>{ready ? `${String(lastFrameRef.current).padStart(3, '0')} / ${CONTACT_FRAME_COUNT}` : 'LOADING FRAMES'}</small>
+      </div>
+    </div>
+  );
+}
+
+function SocialTerminalCard({ item, index }) {
+  return (
+    <motion.a
+      className="contact-social-card"
+      href={item.href}
+      target={item.href.startsWith('mailto:') ? undefined : '_blank'}
+      rel={item.href.startsWith('mailto:') ? undefined : 'noreferrer'}
+      data-cursor="magnetic"
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ delay: index * 0.055, duration: 0.46, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -6, scale: 1.015 }}
+      aria-label={`Open ${item.label}`}
+    >
+      <span className="social-pixels" aria-hidden="true"><i /><i /><i /><i /></span>
+      <span className="social-icon"><BrandIcon label={item.label} size={22} /></span>
+      <span className="social-copy">
+        <strong>{item.label}</strong>
+        <small>{item.handle}</small>
+      </span>
+      <ArrowUpRight size={17} />
+    </motion.a>
+  );
+}
+
 function Contact() {
   return (
     <section id="contact" className="section contact-section">
+      <div className="contact-grid-bg" />
+      <ContactFramePlayer />
       <motion.div
-        className="contact-card"
-        initial={{ opacity: 0, y: 36 }}
+        className="contact-terminal"
+        initial={{ opacity: 0, y: 42 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-100px' }}
-        transition={{ duration: 0.75 }}
+        viewport={{ once: true, margin: '-120px' }}
+        transition={{ duration: 0.72, ease: [0.16, 1, 0.3, 1] }}
       >
         <span className="eyebrow">Contact</span>
-        <h2><span>Let's Build</span> <em>Something</em></h2>
+        <h2><span>Signal</span> <em>Open.</em></h2>
         <p data-cursor="text">
-          Reach out at <a href="mailto:hello@adilca.dev">hello@adilca.dev</a>
+          No forms. No friction. Pick a channel and send the signal directly.
         </p>
-        <form onSubmit={(event) => event.preventDefault()}>
-          <div className="form-row">
-            <input aria-label="Name" placeholder="Name" type="text" />
-            <input aria-label="Email" placeholder="Email" type="email" />
-          </div>
-          <textarea aria-label="Message" placeholder="Message" rows="5" />
-          <button type="submit" data-cursor="magnetic">
-            <Send size={17} /> Send Message
-          </button>
-        </form>
-        <div className="socials">
-          {[
-            'GitHub',
-            'LinkedIn',
-            'Twitter / X',
-            'Instagram',
-            'Email',
-          ].map((label) => (
-            <a data-cursor="magnetic" href={label === 'Email' ? 'mailto:hello@adilca.dev' : '#home'} key={label} aria-label={label} title={label}>
-              <BrandIcon label={label} />
-            </a>
+        <div className="contact-social-grid">
+          {socials.map((item, index) => (
+            <SocialTerminalCard key={item.label} item={item} index={index} />
           ))}
         </div>
       </motion.div>
@@ -921,6 +1163,8 @@ function Footer() {
 export default function App() {
   const audioRef = useRef(null);
   const [soundOn, setSoundOn] = useState(false);
+  const [audioStatus, setAudioStatus] = useState('idle');
+  const [audioSrc, setAudioSrc] = useState(() => assetPath('audio/myvoice.mp3'));
 
   useEffect(() => {
     const lenis = new Lenis({ lerp: 0.08, wheelMultiplier: 0.9 });
@@ -943,24 +1187,49 @@ export default function App() {
       if (soundOn) {
         audioRef.current.pause();
         setSoundOn(false);
+        setAudioStatus('paused');
       } else {
-        audioRef.current.volume = 0.28;
+        setAudioStatus('loading');
+        audioRef.current.volume = 0.72;
         await audioRef.current.play();
         setSoundOn(true);
+        setAudioStatus('playing');
       }
     } catch {
       setSoundOn(false);
+      setAudioStatus('error');
     }
   };
-
-  const ambient = useMemo(() => assetPath('audio/ambient.mp3'), []);
 
   return (
     <>
       <Loader />
       <CustomCursor />
-      <audio ref={audioRef} src={ambient} preload="none" loop />
-      <Navbar soundOn={soundOn} toggleSound={toggleSound} />
+      <audio
+        ref={audioRef}
+        src={audioSrc}
+        preload="none"
+        loop
+        onPlay={() => {
+          setSoundOn(true);
+          setAudioStatus('playing');
+        }}
+        onPause={() => {
+          setSoundOn(false);
+          setAudioStatus('paused');
+        }}
+        onWaiting={() => setAudioStatus('loading')}
+        onError={() => {
+          if (audioSrc.endsWith('myvoice.mp3')) {
+            setAudioSrc(assetPath('audio/myvoice.mp4'));
+            setAudioStatus('idle');
+          } else {
+            setSoundOn(false);
+            setAudioStatus('error');
+          }
+        }}
+      />
+      <Navbar soundOn={soundOn} toggleSound={toggleSound} audioStatus={audioStatus} />
       <main>
         <Hero />
         <About />
